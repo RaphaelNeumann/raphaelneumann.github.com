@@ -210,11 +210,10 @@ td.num { white-space: nowrap; }
     </div>
     <div class="panel">
       <div class="presets">
-        <button type="button" id="p-fiel">Fidelidade total</button>
-        <button type="button" id="p-base">Cenário de exemplo</button>
+        <button type="button" id="p-base">Voltar ao cenário de exemplo</button>
       </div>
       <p class="hint">O grupo "Não foram votar no 1º turno" é calculado sozinho. Cada controle só se move até onde o resultado oficial continua possível. A faixa verde embaixo de cada controle mostra até onde ele pode ir.</p>
-      <label class="toggle"><input type="checkbox" id="unlock"><span><strong>Destravar controles.</strong> Os controles passam a se mover livremente, e a tabela mostra quanto o cenário fica longe do resultado oficial. Ao travar de novo, a página volta ao cenário "Fidelidade total" se o cenário atual não fechar.</span></label>
+      <label class="toggle"><input type="checkbox" id="unlock"><span><strong>Destravar controles.</strong> Os controles passam a se mover livremente, e a tabela mostra quanto o cenário fica longe do resultado oficial. Ao travar de novo, a página volta ao cenário de exemplo se o cenário atual não fechar.</span></label>
       <div id="controls"></div>
     </div>
   </div>
@@ -225,7 +224,7 @@ td.num { white-space: nowrap; }
     <div class="eyebrow">Dados e método</div>
     <p>1º turno (4/10): 158.745.502 aptos, 125.275.835 compareceram, 2.300.798 brancos, 3.674.249 nulos, 119.300.788 votos válidos. 2º turno (25/10): 128.236.074 compareceram, 1.430.496 brancos, 2.723.305 nulos, 124.082.273 válidos (Lula 64.256.232, Flávio Bolsonaro 59.826.041).</p>
     <p>A abstenção do 2º turno aqui é 158.745.502 − 128.236.074 = 30.509.428. O TSE divulga 30.509.005; a diferença de 423 eleitores vem de 41 seções que não foram instaladas (nos dois turnos) e não muda nada na conta.</p>
-    <p>O simulador é um modelo de premissas. Ninguém sabe como cada eleitor votou nos dois turnos, porque o voto é secreto. Os percentuais do cenário de exemplo são ilustrativos, não estimativas.</p>
+    <p>O simulador é um modelo de premissas. Ninguém sabe como cada eleitor votou nos dois turnos, porque o voto é secreto. O cenário de exemplo supõe fidelidade total (todo eleitor de Lula e de Flávio no 1º turno repetiu o voto) e que ninguém que faltou no 1º turno foi votar branco ou nulo no 2º. Os outros percentuais são ilustrativos, não estimativas.</p>
     <p>Fontes: <a href="https://www.tse.jus.br/comunicacao/noticias/2026/Outubro/presidente-do-tse-anuncia-reeleicao-de-lula-e-faz-balanco-do-2o-turno-das-eleicoes-2026">TSE</a>, <a href="https://www.cartacapital.com.br/politica/tse-encerra-apuracao-do-1o-turno/">CartaCapital (1º turno)</a>, <a href="https://jovempan.com.br/politica/quase-3-milhoes-a-mais-votaram-segundo-turno-abstencao-2026/">Jovem Pan (comparecimento)</a>, <a href="https://www.opovo.com.br/noticias/politica/eleicoes/2026/10/25/resultado-eleicoes-2026-votos-brancos-e-nulos-no-2-turno.html">O Povo (brancos e nulos)</a>.</p>
   </section>
 </div>
@@ -251,23 +250,22 @@ const DESTS = [
 const SL = [["L", "→ Lula"], ["F", "→ Flávio"], ["B", "→ Branco/nulo"]];
 const KEYS = ["L", "F", "B"];
 
+/* Cenário de exemplo: fidelidade total (quem votou em Lula ou Flávio repetiu o voto)
+   e ninguém que faltou no 1º turno foi votar branco ou nulo no 2º.
+   Por isso os brancos e nulos do 2º turno vêm só de quem já votou no 1º. */
+const OUTROS_B = 10;
+const BN_B = (R2.B - R1.outros * OUTROS_B / 100) / R1.bn * 100;
 const PRESETS = {
-  fiel: {
+  base: {
     lula:   { L: 100, F: 0,   B: 0 },
     flavio: { L: 0,   F: 100, B: 0 },
-    outros: { L: 45,  F: 30,  B: 10 },
-    bn:     { L: 20,  F: 15,  B: 40 },
-  },
-  base: {
-    lula:   { L: 97,  F: 0.6, B: 0.6 },
-    flavio: { L: 0.6, F: 97,  B: 0.6 },
-    outros: { L: 45,  F: 30,  B: 10 },
-    bn:     { L: 20,  F: 15,  B: 40 },
+    outros: { L: 45,  F: 25,  B: OUTROS_B },
+    bn:     { L: 20,  F: 15,  B: BN_B },
   },
 };
 
 const clone = o => JSON.parse(JSON.stringify(o));
-let state = clone(PRESETS.fiel);
+let state = clone(PRESETS.base);
 let locked = true;
 
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -286,7 +284,7 @@ function absenteeShares(st) {
 }
 function isFeasible(st) {
   const a = absenteeShares(st);
-  const eps = 1e-9;
+  const eps = 1e-6;
   return a.L >= -eps && a.F >= -eps && a.B >= -eps && a.L + a.F + a.B <= 100 + eps;
 }
 
@@ -475,10 +473,9 @@ function drawSankey(flows) {
 
 document.getElementById("unlock").addEventListener("change", e => {
   locked = !e.target.checked;
-  if (locked && !isFeasible(state)) state = clone(PRESETS.fiel);
+  if (locked && !isFeasible(state)) state = clone(PRESETS.base);
   update();
 });
-document.getElementById("p-fiel").addEventListener("click", () => { state = clone(PRESETS.fiel); update(); });
 document.getElementById("p-base").addEventListener("click", () => { state = clone(PRESETS.base); update(); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
 new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
