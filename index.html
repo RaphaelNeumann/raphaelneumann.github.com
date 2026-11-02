@@ -1,48 +1,64 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="pt-br" lang="pt-br">
-    <head>
-        <title>Raphael Neumann</title>
-        <meta name="Content-Type" content="text/html; charset=UTF-8" />
-        <meta charset="utf-8" />
-        <link href='http://fonts.googleapis.com/css?family=Exo:100,200,300,400,500,600,700,800,900,100italic,200italic,300italic,400italic,500italic,600italic,800italic,700italic,900italic&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
-        <link rel="stylesheet" href="style.css" type="text/css" media="screen" charset="utf-8">
-    </head>
-        <body>
-            <div id="Content">
-                <div class="content-esquerda">
-                    <h2>Olá, eu sou o</h2>
-                </div>
-                <div style='clear:both'></div>
-                <h1>Raphael Neumann</h1>
-                <div class="content-esquerda">
-                    <div id='box-esquerda'>
-                        <h3>Profissional</h3>
-                        <div class='links-esquerda'>
-                            <ul>
-                                <li><a href="http://github.com/RaphaelNeumann"><img src="images/github.png"/></a></li>
-                                <li><a href="mailto:raphael@rneumann.me"><img src="images/email.png"/></a></li>
-                                <li><a href="#"><img src="images/wordpress.png"/></a></li>
-                           </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="content-direita">
-                    <div id="box-direita">
-                        <h3>Social</h3>
-                        <div class='links-direita'>
-                            <ul>
-                                <li><a href="http://twitter.com/RaphaelNeumann"><img src="images/twitter.png"/></a></li>
-                                <li><a href="http://facebook.com/raph.neumann"><img src="images/facebook.png"/></a></li>
-                                <li><a href="http://instagram.com/RaphaelNeumann"><img src="images/instagram.png"/></a></li>
-                                <li><a href="https://plus.google.com/106345011515063966453/posts"><img src="images/googleplus.png"/></a></li>
-                                <li><a href="#"><img src="images/linkedin.png"/></a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <div id="direita"></div>
-        <div id="esquerda"></div>
-        <a href="https://plus.google.com/103158066782146575744" rel="publisher">Google+</a>
-    </body>
-    
-</htmt>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Raphael Neumann</title>
+  <meta name="description" content="Relacionamento cristão, fé e vida com propósito. Marido da Ana e pai da Eleonora.">
+  <meta property="og:title" content="Raphael Neumann">
+  <meta property="og:description" content="Relacionamento cristão, fé e vida com propósito.">
+  <meta property="og:url" content="https://rneumann.me/">
+  <style>
+    :root {
+      --bg: #faf8f5; --text: #1f1f1f; --muted: #6b6b6b;
+      --card: #ffffff; --line: #e6e1da; --accent: #486c81;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #161616; --text: #f1f1f1; --muted: #a3a3a3;
+              --card: #222222; --line: #333333; --accent: #8fb3c8; }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 16px;
+    }
+    main { width: 100%; max-width: 440px; text-align: center; }
+    h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+    .bio { color: var(--muted); margin: 8px 0 32px; }
+    .links { display: flex; flex-direction: column; gap: 12px; }
+    .links a {
+      display: block; padding: 16px 20px; border-radius: 14px;
+      background: var(--card); border: 1px solid var(--line);
+      color: var(--text); text-decoration: none; font-weight: 600;
+    }
+    .links a small { display: block; font-weight: 400; color: var(--muted); font-size: 0.875rem; margin-top: 2px; }
+    .links a.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .links a.primary small { color: rgba(255,255,255,0.85); }
+    .links a:hover { filter: brightness(0.97); }
+    footer { margin-top: 40px; color: var(--muted); font-size: 0.8125rem; }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Raphael Neumann</h1>
+    <p class="bio">Relacionamento cristão, fé e vida com propósito.<br>Marido da Ana e pai da Eleonora.</p>
+
+    <nav class="links">
+      <a class="primary" href="https://instagram.com/RaphaelNeumann">
+        Instagram
+        <small>@RaphaelNeumann</small>
+      </a>
+      <a href="/eleicao/">
+        A conta do 2º turno
+        <small>Infográfico interativo com os números do TSE</small>
+      </a>
+    </nav>
+
+    <footer><a href="mailto:raphael@rneumann.me">raphael@rneumann.me</a></footer>
+  </main>
+</body>
+</html>

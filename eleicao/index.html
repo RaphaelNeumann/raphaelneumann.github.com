@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Por que a soma do 2º turno de 2026 fecha com os dados do TSE: simulador interativo dos votos entre os turnos.">
+<title>A Conta do Segundo Turno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: coluna única de leitura (~760px); o simulador abre para 1100px com diagrama + controles lado a lado. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #16181d;
+  --muted: #5b6070;
+  --line: #dcdfe6;
+  --lula: #c8202f;
+  --flavio: #1f4fa8;
+  --outros: #d08a10;
+  --bn: #7d8293;
+  --abst: #b9bdc8;
+  --ok: #1c7a46;
+  --warn: #b3261e;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141a; --surface: #1b1e26; --fg: #eceef3; --muted: #9aa0b0; --line: #2d313c;
+    --lula: #ef4b57; --flavio: #5b8cf0; --outros: #e9a634; --bn: #8d92a3; --abst: #4a4f5d;
+    --ok: #4cc283; --warn: #ff7a70; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141a; --surface: #1b1e26; --fg: #eceef3; --muted: #9aa0b0; --line: #2d313c;
+  --lula: #ef4b57; --flavio: #5b8cf0; --outros: #e9a634; --bn: #8d92a3; --abst: #4a4f5d;
+  --ok: #4cc283; --warn: #ff7a70; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 56px; }
+.wide { max-width: 1100px; margin: 0 auto; width: 100%; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.05; }
+h1 { font-size: clamp(2.4rem, 7vw, 4rem); font-weight: 900; font-stretch: 80%; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; font-stretch: 85%; }
+h3 { font-size: 1.1rem; font-weight: 700; font-stretch: 90%; }
+p { margin: 0; max-width: 65ch; }
+.eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+section { display: grid; gap: 18px; }
+.lede { font-size: 1.15rem; color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.lula { color: var(--lula); } .flavio { color: var(--flavio); } .outros { color: var(--outros); }
+
+/* Barras comparativas */
+.bars { display: grid; gap: 14px; }
+.barrow { display: grid; gap: 6px; }
+.barrow .lab { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); }
+.bar { display: flex; height: 38px; border-radius: 3px; overflow: hidden; background: var(--line); }
+.bar span { display: block; height: 100%; min-width: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.85rem; color: var(--muted); }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+/* Equação */
+.eq { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: stretch; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 4px; align-content: start; }
+.term b { font-family: var(--mono); font-size: 1.35rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.term small { color: var(--muted); font-size: 0.82rem; line-height: 1.35; }
+.op { font-family: var(--display); font-size: 1.4rem; font-weight: 800; color: var(--muted); }
+.eqline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.eqline .term { flex: 1 1 140px; }
+.result { border-color: var(--fg); }
+.callout { border-left: 3px solid var(--outros); padding: 4px 0 4px 14px; color: var(--fg); }
+
+/* Simulador */
+.sim { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .sim { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.sankey-box { overflow-x: auto; position: relative; }
+.sankey-box svg { display: block; width: 100%; min-width: 560px; height: auto; cursor: zoom-in; }
+.expand-btn { position: absolute; top: 0; right: 0; font-size: 0.8rem; padding: 5px 12px; background: var(--surface); }
+.sankey-box.expanded {
+  position: fixed; inset: 0; z-index: 50; background: var(--surface); overflow: auto;
+  display: flex; align-items: center; justify-content: center;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sankey-box.expanded svg { width: min(100%, calc((100vh - 100px) * 900 / 560)); min-width: 720px; margin: auto; cursor: zoom-out; }
+.sankey-box.expanded .expand-btn {
+  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: max(16px, env(safe-area-inset-right, 0px)); font-size: 0.9rem; padding: 8px 16px;
+}
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font: 500 0.88rem var(--body); color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 999px; padding: 7px 14px; cursor: pointer;
+}
+button:hover { border-color: var(--fg); }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--flavio); outline-offset: 2px; }
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 0.92rem; }
+.toggle input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--ok); }
+details.group { border-top: 1px solid var(--line); padding-top: 10px; }
+details.group summary { cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; list-style: none; }
+details.group summary::-webkit-details-marker { display: none; }
+details.group summary h3::before { content: "▸ "; color: var(--muted); }
+details.group[open] summary h3::before { content: "▾ "; }
+.gsize { font-size: 0.8rem; color: var(--muted); }
+.sl { display: grid; grid-template-columns: 92px minmax(0, 1fr) 118px; gap: 10px; align-items: center; font-size: 0.85rem; margin-top: 8px; }
+.sl label { color: var(--muted); }
+.sl input[type=range] { width: 100%; }
+.sl output { text-align: right; font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.sl.rest output, .sl.rest label { color: var(--muted); }
+.track { display: grid; gap: 3px; min-width: 0; }
+.track input[type=range] { width: 100%; margin: 0; }
+.allow { position: relative; height: 4px; background: var(--line); border-radius: 2px; }
+.allow span { position: absolute; top: 0; height: 100%; background: var(--ok); border-radius: 2px; opacity: .75; }
+.hint { font-size: 0.86rem; color: var(--muted); }
+.restbar { height: 6px; background: var(--abst); border-radius: 3px; }
+.group.locked input[type=range] { opacity: 0.45; }
+.lockednote { font-size: 0.8rem; color: var(--ok); margin-top: 6px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+td.num { white-space: nowrap; }
+.pos { color: var(--warn); } .zero { color: var(--ok); }
+.status { padding: 12px 14px; border-radius: 6px; font-size: 0.92rem; border: 1px solid; }
+.status.ok { border-color: var(--ok); color: var(--ok); }
+.status.bad { border-color: var(--warn); color: var(--warn); }
+.status strong { font-weight: 600; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.notes { font-size: 0.85rem; color: var(--muted); display: grid; gap: 8px; }
+.notes a { color: inherit; }
+@media (prefers-reduced-motion: no-preference) { .bar span { transition: width .4s ease; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="display:grid;gap:16px">
+    <div class="eyebrow">Eleição presidencial 2026 · 2º turno, 25 de outubro</div>
+    <h1>A conta do segundo turno</h1>
+    <p class="lede">Lula ganhou 10,38 milhões de votos entre um turno e outro. Os candidatos eliminados tinham só 9,32 milhões. Parece que a conta não fecha, mas esse cálculo esquece duas coisas que mudaram entre os turnos: quem anulou e quem não foi votar.</p>
+  </header>
+
+  <section>
+    <div class="eyebrow">O eleitorado inteiro, nos dois turnos</div>
+    <h2>Os mesmos 158,7 milhões de eleitores, distribuídos de outro jeito</h2>
+    <div class="bars" id="bars"></div>
+    <div class="legend">
+      <span><i style="background:var(--lula)"></i>Lula</span>
+      <span><i style="background:var(--flavio)"></i>Flávio Bolsonaro</span>
+      <span><i style="background:var(--outros)"></i>Outros 10 candidatos</span>
+      <span><i style="background:var(--bn)"></i>Branco + nulo</span>
+      <span><i style="background:var(--abst)"></i>Abstenção</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">A conta dos vídeos</div>
+    <h2>Só os votos dos eliminados não bastam</h2>
+    <div class="eqline">
+      <div class="term"><small>Lula ganhou</small><b class="lula">+10,38 mi</b></div>
+      <div class="op">+</div>
+      <div class="term"><small>Flávio ganhou</small><b class="flavio">+3,72 mi</b></div>
+      <div class="op">=</div>
+      <div class="term result"><small>Os dois juntos ganharam</small><b>14,10 mi</b></div>
+    </div>
+    <p>Mas os outros candidatos tinham só <span class="num outros">9,32 mi</span> de votos. Faltam <span class="num">4,78 mi</span>. Quem para nessa conta conclui que apareceu voto do nada.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">A conta completa</div>
+    <h2>De onde vieram os 4,78 milhões que faltam</h2>
+    <div class="eqline">
+      <div class="term"><small>Votos dos candidatos eliminados</small><b class="outros">9,32 mi</b></div>
+      <div class="op">+</div>
+      <div class="term"><small>Brancos e nulos a menos (5,98 → 4,15 mi)</small><b>1,82 mi</b></div>
+      <div class="op">+</div>
+      <div class="term"><small>Eleitores a mais nas urnas (125,28 → 128,24 mi)</small><b>2,96 mi</b></div>
+      <div class="op">=</div>
+      <div class="term result"><small>Fecha exatamente</small><b>14,10 mi</b></div>
+    </div>
+    <p class="callout">Esses são saldos líquidos. Na prática o vai e vem é bem maior: parte de quem votou no 1º turno ficou em casa no 2º, e parte de quem faltou no 1º apareceu no 2º. O saldo de 2,96 mi é a diferença entre esses dois grupos. O simulador abaixo deixa você testar esses movimentos.</p>
+  </section>
+</div>
+
+<section class="wide" style="margin-top:64px">
+  <div style="max-width:760px;margin:0 auto 22px;display:grid;gap:12px">
+    <div class="eyebrow">Simulador</div>
+    <h2>Teste suas próprias premissas</h2>
+    <p>Para cada grupo do 1º turno, escolha quantos por cento foram para Lula, Flávio ou branco/nulo no 2º turno. O que sobra ficou em casa. O simulador calcula quantos ausentes do 1º turno precisariam ter ido votar, e em quem, para chegar ao resultado oficial. Assim a conta sempre fecha.</p>
+  </div>
+  <div class="sim">
+    <div class="panel">
+      <div class="sankey-box" id="sankey-box"><button type="button" class="expand-btn" id="expand-btn" aria-expanded="false">Ampliar ⤢</button><svg id="sankey" viewBox="0 0 900 560" role="img" aria-label="Fluxo de eleitores do 1º para o 2º turno"></svg></div>
+      <div id="status"></div>
+      <table>
+        <thead><tr><th>2º turno</th><th>Simulado</th><th>Oficial (TSE)</th><th>Diferença</th></tr></thead>
+        <tbody id="check"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="presets">
+        <button type="button" id="p-fiel">Fidelidade total</button>
+        <button type="button" id="p-base">Cenário de exemplo</button>
+      </div>
+      <p class="hint">O grupo "Não foram votar no 1º turno" é calculado sozinho. Cada controle só se move até onde o resultado oficial continua possível. A faixa verde embaixo de cada controle mostra até onde ele pode ir.</p>
+      <label class="toggle"><input type="checkbox" id="unlock"><span><strong>Destravar controles.</strong> Os controles passam a se mover livremente, e a tabela mostra quanto o cenário fica longe do resultado oficial. Ao travar de novo, a página volta ao cenário "Fidelidade total" se o cenário atual não fechar.</span></label>
+      <div id="controls"></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap" style="margin-top:56px">
+  <section class="notes">
+    <div class="eyebrow">Dados e método</div>
+    <p>1º turno (4/10): 158.745.502 aptos, 125.275.835 compareceram, 2.300.798 brancos, 3.674.249 nulos, 119.300.788 votos válidos. 2º turno (25/10): 128.236.074 compareceram, 1.430.496 brancos, 2.723.305 nulos, 124.082.273 válidos (Lula 64.256.232, Flávio Bolsonaro 59.826.041).</p>
+    <p>A abstenção do 2º turno aqui é 158.745.502 − 128.236.074 = 30.509.428. O TSE divulga 30.509.005; a diferença de 423 eleitores vem de 41 seções que não foram instaladas (nos dois turnos) e não muda nada na conta.</p>
+    <p>O simulador é um modelo de premissas. Ninguém sabe como cada eleitor votou nos dois turnos, porque o voto é secreto. Os percentuais do cenário de exemplo são ilustrativos, não estimativas.</p>
+    <p>Fontes: <a href="https://www.tse.jus.br/comunicacao/noticias/2026/Outubro/presidente-do-tse-anuncia-reeleicao-de-lula-e-faz-balanco-do-2o-turno-das-eleicoes-2026">TSE</a>, <a href="https://www.cartacapital.com.br/politica/tse-encerra-apuracao-do-1o-turno/">CartaCapital (1º turno)</a>, <a href="https://jovempan.com.br/politica/quase-3-milhoes-a-mais-votaram-segundo-turno-abstencao-2026/">Jovem Pan (comparecimento)</a>, <a href="https://www.opovo.com.br/noticias/politica/eleicoes/2026/10/25/resultado-eleicoes-2026-votos-brancos-e-nulos-no-2-turno.html">O Povo (brancos e nulos)</a>.</p>
+  </section>
+</div>
+
+<script>
+const APTOS = 158745502;
+const R1 = { lula: 53879538, flavio: 56104503, outros: 9316747, bn: 5975047, abst: 33469667 };
+const R2 = { L: 64256232, F: 59826041, B: 4153801, A: 30509428 };
+
+const GROUPS = [
+  { id: "lula",   label: "Eleitores de Lula",        color: "--lula" },
+  { id: "flavio", label: "Eleitores de Flávio",      color: "--flavio" },
+  { id: "outros", label: "Eleitores dos outros 10",  color: "--outros" },
+  { id: "bn",     label: "Votaram branco/nulo",      color: "--bn" },
+  { id: "abst",   label: "Não foram votar no 1º turno", color: "--abst" },
+];
+const DESTS = [
+  { id: "L", label: "Lula", color: "--lula" },
+  { id: "F", label: "Flávio", color: "--flavio" },
+  { id: "B", label: "Branco/nulo", color: "--bn" },
+  { id: "A", label: "Abstenção", color: "--abst" },
+];
+const SL = [["L", "→ Lula"], ["F", "→ Flávio"], ["B", "→ Branco/nulo"]];
+const KEYS = ["L", "F", "B"];
+
+const PRESETS = {
+  fiel: {
+    lula:   { L: 100, F: 0,   B: 0 },
+    flavio: { L: 0,   F: 100, B: 0 },
+    outros: { L: 45,  F: 30,  B: 10 },
+    bn:     { L: 20,  F: 15,  B: 40 },
+  },
+  base: {
+    lula:   { L: 97,  F: 0.6, B: 0.6 },
+    flavio: { L: 0.6, F: 97,  B: 0.6 },
+    outros: { L: 45,  F: 30,  B: 10 },
+    bn:     { L: 20,  F: 15,  B: 40 },
+  },
+};
+
+const clone = o => JSON.parse(JSON.stringify(o));
+let state = clone(PRESETS.fiel);
+let locked = true;
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const mi = x => (x / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " mi";
+const full = x => Math.round(x).toLocaleString("pt-BR");
+const pct = x => x.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
+
+/* Quanto dos ausentes do 1º turno precisa ir para cada destino para bater o oficial */
+function absenteeShares(st) {
+  const need = { L: R2.L, F: R2.F, B: R2.B };
+  for (const g of GROUPS) {
+    if (g.id === "abst") continue;
+    for (const k of KEYS) need[k] -= R1[g.id] * st[g.id][k] / 100;
+  }
+  return { L: need.L / R1.abst * 100, F: need.F / R1.abst * 100, B: need.B / R1.abst * 100 };
+}
+function isFeasible(st) {
+  const a = absenteeShares(st);
+  const eps = 1e-9;
+  return a.L >= -eps && a.F >= -eps && a.B >= -eps && a.L + a.F + a.B <= 100 + eps;
+}
+
+/* Aplica um novo valor a um controle; se passar de 100% no grupo, reduz os outros na mesma proporção */
+function withValue(st, g, k, v) {
+  const s = clone(st);
+  const p = s[g];
+  const others = KEYS.filter(x => x !== k).reduce((t, x) => t + p[x], 0);
+  if (v + others > 100) {
+    const room = 100 - v;
+    for (const x of KEYS) if (x !== k) p[x] = others > 0 ? p[x] * room / others : 0;
+  }
+  p[k] = v;
+  return s;
+}
+
+/* Maior deslocamento possível de "from" em direção a "to" sem quebrar a conta */
+function furthest(g, k, from, to) {
+  if (isFeasible(withValue(state, g, k, to))) return to;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (isFeasible(withValue(state, g, k, from + (to - from) * mid))) lo = mid; else hi = mid;
+  }
+  return from + (to - from) * lo;
+}
+
+function renderBars() {
+  const rows = [
+    { lab: "1º turno", parts: [["--lula", R1.lula], ["--flavio", R1.flavio], ["--outros", R1.outros], ["--bn", R1.bn], ["--abst", R1.abst]] },
+    { lab: "2º turno", parts: [["--lula", R2.L], ["--flavio", R2.F], ["--bn", R2.B], ["--abst", R2.A]] },
+  ];
+  document.getElementById("bars").innerHTML = rows.map(r => `
+    <div class="barrow">
+      <div class="lab"><span>${r.lab}</span><span class="num">${full(APTOS)} aptos</span></div>
+      <div class="bar">${r.parts.map(([c, v]) => `<span style="width:${(v / APTOS * 100).toFixed(3)}%;background:var(${c})" title="${mi(v)}"></span>`).join("")}</div>
+    </div>`).join("");
+}
+
+function computeFlows() {
+  let a = absenteeShares(state);
+  a = { L: Math.max(0, a.L), F: Math.max(0, a.F), B: Math.max(0, a.B) };
+  const sum = a.L + a.F + a.B;
+  if (sum > 100) { a.L *= 100 / sum; a.F *= 100 / sum; a.B *= 100 / sum; }
+  const all = { ...state, abst: a };
+  const flows = {};
+  for (const g of GROUPS) {
+    const p = all[g.id];
+    const rest = Math.max(0, 100 - p.L - p.F - p.B);
+    flows[g.id] = { L: R1[g.id] * p.L / 100, F: R1[g.id] * p.F / 100, B: R1[g.id] * p.B / 100, A: R1[g.id] * rest / 100, p, rest };
+  }
+  return flows;
+}
+
+function buildControls() {
+  const box = document.getElementById("controls");
+  box.innerHTML = GROUPS.map((g, i) => `
+    <details class="group" id="grp-${g.id}" ${i === 2 || i === 3 || i === 4 ? "open" : ""}>
+      <summary><h3><span class="dot" style="background:var(${g.color})"></span>${g.label}</h3><span class="gsize num">${mi(R1[g.id])}</span></summary>
+      ${SL.map(([k, lab]) => `
+        <div class="sl">
+          <label for="s-${g.id}-${k}">${lab}</label>
+          <div class="track">
+            <input type="range" id="s-${g.id}-${k}" min="0" max="100" step="0.1" data-g="${g.id}" data-k="${k}" ${g.id === "abst" ? "disabled" : ""}>
+            ${g.id === "abst" ? "" : `<div class="allow"><span id="a-${g.id}-${k}"></span></div>`}
+          </div>
+          <output id="o-${g.id}-${k}"></output>
+        </div>`).join("")}
+      ${g.id === "abst" ? `<div class="lockednote" id="abst-note"></div>` : `
+      <div class="sl rest">
+        <label>→ Ficou em casa</label>
+        <div class="restbar" id="rb-${g.id}"></div>
+        <output id="o-${g.id}-A"></output>
+      </div>`}
+    </details>`).join("");
+
+  box.querySelectorAll("input[type=range]:not([disabled])").forEach(inp => {
+    inp.addEventListener("input", e => {
+      const { g, k } = e.target.dataset;
+      const from = state[g][k];
+      const to = parseFloat(e.target.value);
+      const v = locked ? furthest(g, k, from, to) : to;
+      state = withValue(state, g, k, v);
+      update();
+    });
+  });
+}
+
+function update() {
+  const flows = computeFlows();
+
+  for (const g of GROUPS) {
+    const f = flows[g.id];
+    const novos = f.L + f.F + f.B;
+    for (const [k] of SL) {
+      const share = g.id === "abst" ? (novos > 0 ? f[k] / novos * 100 : 0) : f.p[k];
+      document.getElementById(`s-${g.id}-${k}`).value = share;
+      document.getElementById(`o-${g.id}-${k}`).textContent = `${pct(share)} · ${mi(f[k])}`;
+      if (g.id !== "abst") {
+        if (!isFeasible(state)) { document.getElementById(`a-${g.id}-${k}`).style.width = "0"; continue; }
+        const cur = state[g.id][k];
+        const lo = furthest(g.id, k, cur, 0), hi = furthest(g.id, k, cur, 100);
+        const bar = document.getElementById(`a-${g.id}-${k}`);
+        bar.style.left = lo + "%";
+        bar.style.width = Math.max(0.5, hi - lo) + "%";
+        bar.title = `Faixa possível: ${pct(lo)} a ${pct(hi)}`;
+      }
+    }
+    if (g.id === "abst") {
+      document.getElementById("abst-note").textContent = `Calculado automaticamente para bater com o resultado oficial. Os percentuais são sobre os ${mi(novos)} que não votaram no 1º turno e foram votar no 2º.`;
+      continue;
+    }
+    document.getElementById(`o-${g.id}-A`).textContent = `${pct(f.rest)} · ${mi(f.A)}`;
+    document.getElementById(`rb-${g.id}`).style.width = f.rest + "%";
+  }
+
+  const tot = { L: 0, F: 0, B: 0, A: 0 };
+  for (const g of GROUPS) for (const d of DESTS) tot[d.id] += flows[g.id][d.id];
+  let maxGap = 0;
+  document.getElementById("check").innerHTML = DESTS.map(d => {
+    const diff = Math.round(tot[d.id] - R2[d.id]);
+    maxGap = Math.max(maxGap, Math.abs(diff));
+    const ok = Math.abs(diff) < 1000;
+    return `<tr><td><span class="dot" style="background:var(${d.color})"></span>${d.label}</td>
+      <td class="num">${mi(tot[d.id])}</td><td class="num">${mi(R2[d.id])}</td>
+      <td class="num ${ok ? "zero" : "pos"}">${ok ? "0" : (diff > 0 ? "+" : "−") + full(Math.abs(diff))}</td></tr>`;
+  }).join("");
+
+  const voltaram = flows.abst.L + flows.abst.F + flows.abst.B;
+  const sairam = GROUPS.filter(g => g.id !== "abst").reduce((s, g) => s + flows[g.id].A, 0);
+  if (maxGap >= 1000) {
+    document.getElementById("status").innerHTML = `<div class="status bad"><strong>A conta não fecha com essas premissas.</strong> Nem mandando os ausentes do 1º turno para os destinos certos dá para chegar ao resultado oficial. A maior diferença é de ${full(maxGap)} votos.</div>`;
+    drawSankey(flows);
+    return;
+  }
+  const sh = k => pct(voltaram > 0 ? flows.abst[k] / voltaram * 100 : 0);
+  document.getElementById("status").innerHTML = `<div class="status ok"><strong>A conta fecha.</strong> Nesse cenário, ${mi(voltaram)} eleitores que não votaram no 1º turno foram votar no 2º. Esses votos novos se dividiram assim: ${sh("L")} para Lula, ${sh("F")} para Flávio e ${sh("B")} branco ou nulo. Do outro lado, ${mi(sairam)} de quem votou no 1º turno ficaram em casa. Saldo: ${mi(voltaram - sairam)} a mais nas urnas.</div>`;
+
+  drawSankey(flows);
+}
+
+function drawSankey(flows) {
+  const svg = document.getElementById("sankey");
+  const H = 560, top = 20, gap = 10, nodeW = 14, x0 = 210, x1 = 690;
+  const usable = H - 2 * top - gap * (GROUPS.length - 1);
+  const k = usable / APTOS;
+  const fg = css("--fg"), muted = css("--muted");
+
+  const left = {}; let y = top;
+  for (const g of GROUPS) { const h = R1[g.id] * k; left[g.id] = { y, h, off: 0 }; y += h + gap; }
+  const rightTotals = { L: 0, F: 0, B: 0, A: 0 };
+  for (const g of GROUPS) for (const d of DESTS) rightTotals[d.id] += flows[g.id][d.id];
+  const rgap = (H - 2 * top - Object.values(rightTotals).reduce((a, b) => a + b, 0) * k) / (DESTS.length - 1);
+  const right = {}; y = top;
+  for (const d of DESTS) { const h = rightTotals[d.id] * k; right[d.id] = { y, h, off: 0 }; y += h + rgap; }
+
+  let ribbons = "";
+  for (const g of GROUPS) {
+    for (const d of DESTS) {
+      const v = flows[g.id][d.id]; if (v <= 0) continue;
+      const h = v * k;
+      const ya = left[g.id].y + left[g.id].off, yb = right[d.id].y + right[d.id].off;
+      left[g.id].off += h; right[d.id].off += h;
+      const xa = x0 + nodeW, xb = x1, m = (xa + xb) / 2;
+      ribbons += `<path d="M${xa},${ya} C${m},${ya} ${m},${yb} ${xb},${yb} L${xb},${yb + h} C${m},${yb + h} ${m},${ya + h} ${xa},${ya + h} Z"
+        fill="${css(g.color)}" fill-opacity="${g.id === "abst" && d.id === "A" ? 0.12 : 0.42}"><title>${g.label} → ${d.label}: ${full(v)}</title></path>`;
+    }
+  }
+  let nodes = "";
+  for (const g of GROUPS) {
+    const n = left[g.id];
+    nodes += `<rect x="${x0}" y="${n.y}" width="${nodeW}" height="${Math.max(n.h, 1)}" fill="${css(g.color)}"/>
+      <text x="${x0 - 10}" y="${n.y + n.h / 2 - 4}" text-anchor="end" font-size="14" font-weight="600" fill="${fg}" font-family="IBM Plex Sans, sans-serif">${g.label}</text>
+      <text x="${x0 - 10}" y="${n.y + n.h / 2 + 13}" text-anchor="end" font-size="12.5" fill="${muted}" font-family="IBM Plex Mono, monospace">${mi(R1[g.id])}</text>`;
+  }
+  for (const d of DESTS) {
+    const n = right[d.id];
+    nodes += `<rect x="${x1}" y="${n.y}" width="${nodeW}" height="${Math.max(n.h, 1)}" fill="${css(d.color)}"/>
+      <text x="${x1 + nodeW + 10}" y="${n.y + n.h / 2 - 4}" font-size="14" font-weight="600" fill="${fg}" font-family="IBM Plex Sans, sans-serif">${d.label}</text>
+      <text x="${x1 + nodeW + 10}" y="${n.y + n.h / 2 + 13}" font-size="12.5" fill="${muted}" font-family="IBM Plex Mono, monospace">${mi(rightTotals[d.id])}</text>`;
+  }
+  const heads = `<text x="${x0 + nodeW / 2}" y="12" text-anchor="middle" font-size="11" letter-spacing="1.5" fill="${muted}" font-family="IBM Plex Mono, monospace">1º TURNO</text>
+    <text x="${x1 + nodeW / 2}" y="12" text-anchor="middle" font-size="11" letter-spacing="1.5" fill="${muted}" font-family="IBM Plex Mono, monospace">2º TURNO</text>`;
+  svg.innerHTML = ribbons + nodes + heads;
+}
+
+document.getElementById("unlock").addEventListener("change", e => {
+  locked = !e.target.checked;
+  if (locked && !isFeasible(state)) state = clone(PRESETS.fiel);
+  update();
+});
+document.getElementById("p-fiel").addEventListener("click", () => { state = clone(PRESETS.fiel); update(); });
+document.getElementById("p-base").addEventListener("click", () => { state = clone(PRESETS.base); update(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
+new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+const sbox = document.getElementById("sankey-box"), sbtn = document.getElementById("expand-btn");
+function setExpanded(on) {
+  sbox.classList.toggle("expanded", on);
+  sbtn.textContent = on ? "Fechar ✕" : "Ampliar ⤢";
+  sbtn.setAttribute("aria-expanded", on);
+  document.body.style.overflow = on ? "hidden" : "";
+}
+sbtn.addEventListener("click", () => setExpanded(!sbox.classList.contains("expanded")));
+document.getElementById("sankey").addEventListener("click", () => setExpanded(!sbox.classList.contains("expanded")));
+document.addEventListener("keydown", e => { if (e.key === "Escape") setExpanded(false); });
+
+renderBars();
+buildControls();
+update();
+</script>
+
+</body>
+</html>
